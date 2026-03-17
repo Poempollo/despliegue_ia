@@ -1,0 +1,12 @@
+services:
+  ai-service:
+    build: ./servicio_ia
+    ports:
+      - "8000:8000"
+
+  proxy-service:
+    build: ./servicio-proxy
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ai-service

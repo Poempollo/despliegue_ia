@@ -4,7 +4,7 @@ import logging
 
 # Configuración de Logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ai-service")
+logger = logging.getLogger("servicio_ia")
 
 app = FastAPI()
 
@@ -14,7 +14,7 @@ class PredictRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "AI Service Running"}
+    return {"status": "Servicio de IA en funcionamiento"}
 
 @app.post("/predict")
 async def predict(request: PredictRequest):
