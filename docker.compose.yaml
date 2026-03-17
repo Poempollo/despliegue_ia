@@ -5,7 +5,7 @@ services:
       - "8000:8000"
 
   proxy-service:
-    build: ./servicio-proxy
+    build: ./servicio_proxy
     ports:
       - "3000:3000"
     depends_on:
