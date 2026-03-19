@@ -1,6 +1,6 @@
 services:
   servicio_ia:
-    build: servicio_ia/.
+    build: ./servicio_ia 
     ports:
       - "8000:8000"
 
