@@ -6,7 +6,11 @@ services:
 
   servicio_proxy:
     build: ./servicio_proxy
+    environment:
+      - IA_URL=servicio_ia
+      - IA_PORT=8000
     ports:
       - "3000:3000"
     depends_on:
       - servicio_ia
+    
