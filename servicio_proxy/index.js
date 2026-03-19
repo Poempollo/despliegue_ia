@@ -17,7 +17,6 @@ app.use((req, res, next) => {
 app.post('/get-prediction', async (req, res) => {
     try {
         // "ai-service" será el nombre del contenedor en la red de Docker
-        // const aiResponse = await axios.post('http://servicio_ia:8000/predict', req.body);
         const aiResponse = await axios.post(`http://${IA_URL}:${IA_PORT}/predict`, req.body);
         
         res.json({
