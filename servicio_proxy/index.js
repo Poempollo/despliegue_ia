@@ -6,7 +6,7 @@ const port = 3000;
 const IA_URL = process.env.IA_URL || 'servicio_ia';
 const IA_PORT = process.env.IA_PORT || '8000';
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Logging básico (Pedido en la práctica)
 app.use((req, res, next) => {
@@ -21,7 +21,7 @@ app.post('/get-prediction', async (req, res) => {
         
         res.json({
             source: 'Intermediary Service',
-            prediction: aiResponse.data.prediction
+            data: aiResponse.data
         });
     } catch (error) {
         // Manejo de excepciones (Pedido en la práctica)

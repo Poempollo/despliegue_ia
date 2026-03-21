@@ -1,48 +1,37 @@
-# Resumen de Progreso: Despliegue de un Modelo de IA como Servicio
-
-Hasta el momento, hemos completado las fases de desarrollo base, comunicación y contenerización (Puntos del 1 al 4 de la práctica). A continuación se detalla cómo se ha implementado cada apartado.
+# Memoria: Despliegue de un modelo de IA como servicio
 
 ## 1. Diseño de los Servicios (Punto 2)
 
-Se ha optado por una arquitectura de microservicios compuesta por dos piezas principales:
+Para esta práctica he diseñado un sistema basado en microservicios compuesto por dos partes principales:
 
 ### Servicio de IA (Python)
-- **Framework:** Se ha construido utilizando **FastAPI**, un framework moderno y rápido para construir APIs en Python.
-- **Lógica e IA:** Actualmente, el modelo de IA está simulado mediante una función matemática (calcula el promedio de una lista de números). Esta aproximación ha permitido validar toda la arquitectura del sistema antes de integrar el modelo definitivo de imágenes.
-- **Validación de datos:** Todo el tipado y validación de entrada se maneja de forma automática con **Pydantic**. El servicio espera recibir estrictamente una lista de números flotantes (ej. `{"data": [10.5, 20.0]}`).
-- **Robustez:** Se ha implementado el módulo estándar de `logging` para registrar cuándo se procesan datos o si ocurre algún fallo. Además, incluye manejo de excepciones (bloque `try/except`) para devolver errores HTTP claros (Status 400) si fallan las validaciones internas.
+He utilizado **FastAPI** para crear este servicio porque es rápido y bastante sencillo de configurar. Este servicio es el corazón de la aplicación, ya que se encarga de cargar nuestro modelo de IA pre-entrenado (en formato `.keras`) y procesar las imágenes que le pasamos para devolver las predicciones.
+También le he añadido validación de los datos de entrada usando **Pydantic**, y he implementado bloques `try/except` y `logging` para poder registrar cuándo se hacen las peticiones o si ha habido algún fallo (devolviendo el código HTTP correspondiente).
+
+📝 *[AQUÍ AÑADIR CAPTURA DEL CÓDIGO DE FASTAPI / MAIN.PY]*
 
 ### Servicio Intermediario / Proxy (Node.js)
-- **Framework:** Implementado en Node.js utilizando **Express**.
-- **Función:** Actúa como la puerta de entrada (API Gateway) para el cliente, aislando el servicio de IA del exterior.
-- **Características:** 
-  - Cuenta con un *middleware* de logging que registra todas las rutas solicitadas y el método HTTP.
-  - Utiliza `axios` para redirigir las peticiones internamente al servicio de Python.
-  - Dispone de un bloque `try/catch` para interceptar cualquier fallo de comunicación o caída del servicio de IA, devolviendo un error HTTP 500 controlado al cliente en lugar de colgarse.
+El proxy actúa como la puerta de entrada para el cliente, aislando así el servicio principal de Python. Lo he creado usando **Express** con Node.js. 
+Este servidor es el que recibe todas las peticiones desde el exterior y se las pasa a la IA. Le he añadido su propio logging para registrar el método HTTP y las rutas, y también bloque `try/catch` para que, si el servicio de IA se colgara por algún motivo, el proxy siga respondiendo con un error HTTP 500 en lugar de romperse.
 
-## 2. Comunicación entre Servicios (Punto 3)
+📝 *[AQUÍ AÑADIR CAPTURA DEL CÓDIGO DE NODE.JS / INDEX.JS]*
 
-La comunicación entre el cliente, el proxy y el servicio de IA se realiza mediante **HTTP (REST)** utilizando el formato **JSON**.
+## 2. Comunicación entre servicios (Punto 3)
 
-**Flujo de la información:**
-1. **Cliente:** Realiza una petición `POST` al endpoint `/get-prediction` del proxy (puerto 3000), enviando el JSON de entrada.
-2. **Proxy:** Recibe la petición, registra la entrada y reenvía el mismo *payload* hacia el servicio interno de IA. La ruta interna se configura mediante variables de entorno (`process.env.IA_URL`), lo que permite que sea dinámico.
-3. **Servicio de IA:** Recibe los datos por el puerto 8000, los valida, procesa la "predicción" y devuelve un JSON al proxy.
-4. **Respuesta final:** El proxy recibe el resultado y lo empaqueta añadiendo un metadato (`source: 'Intermediary Service'`) antes de entregarlo al usuario final.
+Ambos microservicios se comunican mediante una API REST usando el formato JSON. El funcionamiento es el siguiente:
+1. El usuario hace una petición `POST` al proxy (puerto 3000) mandando la información.
+2. El proxy intercepta esto, apunta el log y reenvía los datos al servicio de IA (puerto 8000) que tengamos en las variables de entorno, usando `axios`.
+3. El servicio de Python procesa los datos, usa el modelo para la predicción y le devuelve el archivo JSON al proxy.
+4. Para acabar, el proxy devuelve esta respuesta final al usuario.
+
+📝 *[AQUÍ AÑADIR CAPTURA DE UNA PETICIÓN EN POSTMAN O LA TERMINAL MOSTRANDO QUE FUNCIONA]*
 
 ## 3. Contenerización (Punto 4)
 
-El sistema está completamente contenerizado para asegurar que puede ejecutarse de forma aislada e independiente en cualquier entorno.
+Para que el sistema funcione en cualquier parte, todo está metido en contenedores Docker. 
+He creado un `Dockerfile` para cada uno de los servicios (uno con `python:3-slim` y el otro con `node:18-slim`). Además, para juntarlo todo, tengo un archivo `docker-compose.yaml` que se encarga de:
+- Levantar ambos servicios a la vez.
+- Crear una red interna para que Node.js encuentre a Python solo utilizando el nombre del contenedor.
+- Asegurarse de que el proxy no arranca hasta que el servicio de IA esté 100% levantado (`depends_on`).
 
-- **Dockerfiles:** Se ha creado un contenedor a medida para cada servicio partiendo de imágenes ligeras (`python:3-slim` y `node:18-slim`) para optimizar el peso y tiempo de despliegue. En el de Python, además, se ha configurado un usuario no-root por motivos de seguridad.
-- **Orquestación con Docker Compose:** Se ha definido un archivo `docker-compose.yaml` que:
-  - Levanta y empaqueta ambos servicios.
-  - Asegura que el servicio de Node.js no arranque hasta que la IA esté lista (`depends_on`).
-  - Crea una red virtual interna de Docker que permite a los servicios encontrarse por su nombre (el proxy busca a la máquina `servicio_ia` directamente, sin usar IPs estáticas).
-  - Expone los puertos (3000 para Node, 8000 para Python) hacia la máquina host (nuestro ordenador).
-
-## 4. Pruebas de Funcionamiento Actuales
-
-Se ha verificado el correcto funcionamiento del ecosistema levantando los contenedores:
-```bash
-docker compose up --build
+📝 *[AQUÍ AÑADIR CAPTURA DEL DOCKER-COMPOSE.YAML O UNA TERMINAL HACIENDO UN `docker compose up`]*
