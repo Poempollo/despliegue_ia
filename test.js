@@ -7,7 +7,10 @@ async function check() {
     console.log("Enviando petición al proxy (puerto 3000)...");
     const response = await fetch("http://localhost:3000/get-prediction", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-api-key": "secreto123" // Pasando la clave de la Mejora
+        },
         body: JSON.stringify({ image_base64: imageBase64 })
     });
 
