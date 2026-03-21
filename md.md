@@ -53,6 +53,36 @@ En el archivo de proxy he añadido un middleware que intercepta cada una de las 
 
 📝 *[AQUÍ AÑADIR CAPTURA EN POSTMAN U OTRO TERMINAL QUE DEMUESTRE UNA RESPUESTA AUTORIZADA, Y LUEGO OTRA DONDE DE EL ERROR 401 POR NO LLEVAR LA KEY CORRECTA]*
 
+**Mejora implementada B: Monitorización de Métricas de Uso.**
+He incorporado un nuevo endpoint en el servidor Intermediario de Node.js: `GET /metrics`. Este endpoint recopila de forma viva la volumetría de uso del servidor y te devuelve un recuento de cuántas peticiones HTTP totales se han procesado, cuántas han acabado en éxito y cuántas han sido fallidas desde la última vez que se arrancó el servidor. Es muy útil como primer paso simulando monitorización con herramientas en la nube.
+
+📝 *[AQUÍ AÑADIR CAPTURA HACIENDO UN GET A HTTP://LOCALHOST:3000/METRICS EN TU NAVEGADOR O POSTMAN]*
+
+**Mejora implementada C: Endpoint de Información del Modelo.**
+Para facilitar la escalabilidad ("¿oye, de qué era este contenedor de IA que subí ayer?"), he añadido un endpoint transparente al servicio de IA que devuelve los metadatos de qué modelo concreto está montado.
+Si el usuario hace un `GET /model-info` hacia el proxy (que a su vez enruta a FastAPI), la API de Python te devuelve la descripción (en este caso indicando "MobileNetV2").
+
+📝 *[AQUÍ AÑADIR CAPTURA HACIENDO GET A HTTP://LOCALHOST:3000/MODEL-INFO]*
+
 ## 5. Despliegue en Kubernetes (Punto 5 y 6)
 
-*(A completar...)*
+Para llevar el proyecto a un entorno profesional y altamente escalable, he migrado toda la orquestación hacia Kubernetes (usando **Minikube** en mi entorno de desarrollo local).
+
+Se ha creado una carpeta `/k8s` donde he definido los **manifestos YAML** correspondientes para ambos servicios. El despliegue incluye lo siguiente:
+
+### Despliegues, Servicios y Comunicación
+- **servicio-ia-deployment y servicio-ia (Service):**
+  Este bloque despliega nuestro backend en Python de manera interna en el Clúster usando un servicio de tipo `ClusterIP`. Esto es importante por seguridad, ya que aísla las IAs del exterior. Solo el proxy puede comunicarse con él a través del nombre de host de DNS interno `servicio-ia`.
+- **servicio-proxy-deployment y servicio-proxy (Service):**
+  Nuestro gateway en Node.js que se encarga de dar la cara al público. Lo he expuesto como tipo `NodePort` (Puerto 30000) para poder acceder a la API desde Postman en mi red local de Windows. Además, en este archivo YAML se declaran explícitamente las *Environment Variables* para que Node sepa dónde encontrar la API de Python.
+
+### Escalabilidad Horizontal y Réplicas
+Para cumplir con las pruebas de autoescalado y soporte a múltiples peticiones simultáneas, he configurado el despliegue del **Servicio de IA con 2 Réplicas (`replicas: 2`)** dentro del YAML.
+Esto significa que Kubernetes levanta activamente y mantiene vivos dos Pods paralelos con el modelo keras cargado. El *Service* interno se encarga automáticamente de actuar como balanceador de carga utilizando *Round Robin*, de forma que cada vez que el proxy manda una imagen nueva a procesar, el trabajo se reparte entre los dos pods, logrando así tolerancia a fallos y doble de velocidad de respuesta con múltiples usuarios.
+
+📝 *[AQUÍ AÑADIR CAPTURA EN TERMINAL DESPUÉS DE EJECUTAR TUS YAML CON KUBECTL MOSTRANDO LOS DOS PODS DE LA IA ARRANCADOS Y RUNNING (`kubectl get pods` y `kubectl get services`).]*
+
+**Comprobación de fallos:**
+Como prueba final, con el clúster arrancado, he mandado una petición errónea a propósito para confirmar la robustez (se devuelve el error controlado pertinente), y peticiones válidas continuadas para validar el escalado entre los pods de Python.
+
+📝 *[AQUÍ AÑADIR CAPTURA DE POSTMAN TIRANDO AL PUERTO: `http://localhost:30000/get-prediction` Y RECIBIENDO LA RESPUESTA CON ÉXITO.]*

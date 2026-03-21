@@ -5,7 +5,7 @@ async function check() {
     const imageBase64 = fs.readFileSync("coche.jpg", { encoding: 'base64' });
 
     console.log("Enviando petición al proxy (puerto 3000)...");
-    const response = await fetch("http://localhost:3000/get-prediction", {
+    const response = await fetch("http://localhost:30000/get-prediction", {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",

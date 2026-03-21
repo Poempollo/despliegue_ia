@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servicio-ia-deployment
+  labels:
+    app: servicio-ia
+spec:
+  replicas: 2 # Escalado: 2 instancias de IA procesando a la vez
+  selector:
+    matchLabels:
+      app: servicio-ia
+  template:
+    metadata:
+      labels:
+        app: servicio-ia
+    spec:
+      containers:
+      - name: servicio-ia
+        image: despliegue_ia-servicio_ia:latest
+        imagePullPolicy: Never # Usa la imagen local de Docker
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servicio-ia
+spec:
+  selector:
+    app: servicio-ia
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP # Solo accesible de forma interna para el Proxy

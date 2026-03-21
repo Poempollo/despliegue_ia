@@ -15,7 +15,7 @@ def test_prediction():
     # 3. Enviamos la petición AL PROXY (puerto 3000), el cual lo reenviará a la IA
     print("Enviando imagen al proxy...")
     response = requests.post(
-        "http://localhost:3000/get-prediction",
+        "http://localhost:3000/model-info",
         json=payload
     )
 

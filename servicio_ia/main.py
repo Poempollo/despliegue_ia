@@ -33,6 +33,16 @@ class ImageRequest(BaseModel):
 def read_root():
     return {"status": "Servicio de IA en funcionamiento con modelo .keras"}
 
+@app.get("/model-info")
+def model_info():
+    """Endpoint para devolver información sobre el modelo cargado (Punto 7 - Mejora)"""
+    return {
+        "modelo_base": "MobileNetV2 (TensorFlow/Keras)",
+        "tarea": "Clasificación de imágenes (1000 clases posibles)",
+        "formato_entrada": "Imagen codificada en Base64 dentro del campo 'image_base64'",
+        "resolucion_procesamiento": "224x224 píxeles"
+    }
+
 @app.post("/predict")
 async def predict(request: ImageRequest):
     if modelo is None:

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servicio-proxy-deployment
+  labels:
+    app: servicio-proxy
+spec:
+  replicas: 1 # Solo necesitamos 1 proxy balanceando tráfico
+  selector:
+    matchLabels:
+      app: servicio-proxy
+  template:
+    metadata:
+      labels:
+        app: servicio-proxy
+    spec:
+      containers:
+      - name: servicio-proxy
+        image: despliegue_ia-servicio_proxy:latest
+        imagePullPolicy: Never # Usa la imagen local
+        ports:
+        - containerPort: 3000
+        env:
+        # Aquí definimos la comunicación entre los servicios
+        - name: IA_URL
+          value: "servicio-ia"
+        - name: IA_PORT
+          value: "8000"
+        - name: API_KEY
+          value: "secreto123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servicio-proxy
+spec:
+  selector:
+    app: servicio-proxy
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30000 
+  type: NodePort # Lo exponemos hacia nuestro PC para poder probarlo
